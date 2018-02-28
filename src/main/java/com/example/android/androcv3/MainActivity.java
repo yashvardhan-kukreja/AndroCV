@@ -8,6 +8,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 import android.widget.Toast;
 import android.support.v7.widget.Toolbar;
 
@@ -27,8 +29,10 @@ public class MainActivity extends AppCompatActivity{
     Mat mRgba, mRgbaT, mGray, mThreshold;
     Toolbar toolbar;
     Button toggleCam, toggleMode;
+    Switch toggleFaceDetection;
     int index = 0;
     int mode = 0;
+    Boolean faceDetection = false;
 
     // Used to load the 'native-lib' library on application startup.
     static {
@@ -122,12 +126,22 @@ public class MainActivity extends AppCompatActivity{
         }
 
         toolbar = findViewById(R.id.toolbar);
-
         javaCameraView = findViewById(R.id.javaCamView);
         javaCameraView.setCvCameraViewListener(cvCameraViewListener2);
 
         toggleCam = findViewById(R.id.toggleCam);
         toggleMode = findViewById(R.id.toggleMode);
+        toggleFaceDetection = findViewById(R.id.toggleFaceDetection);
+
+
+        // Toggle switch for face detection
+        toggleFaceDetection.setChecked(false);
+        toggleFaceDetection.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                faceDetection = isChecked;
+            }
+        });
 
         // When toggle camera button is clicked by the user
         toggleCam.setOnClickListener(new View.OnClickListener() {
