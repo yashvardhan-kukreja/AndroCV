@@ -26,29 +26,45 @@
             android:layout_height="fill_parent"
             android:id="@+id/javaCamView"/>
 
-        <android.support.v7.widget.Toolbar
-            android:layout_width="match_parent"
+        <!--<android.support.v7.widget.Toolbar-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:id="@+id/toolbar"-->
+            <!--android:background="#7300b900"-->
+            <!--app:title="AndroCV"-->
+            <!--app:titleTextColor="#ffffff"/>-->
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/toolbar"
-            android:background="#7300b900"
-            app:title="AndroCV"
-            app:titleTextColor="#ffffff"/>
+            android:text="AndroCV"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginTop="16dp"
+            android:textStyle="bold"/>
     </FrameLayout>
     <LinearLayout
         android:layout_width="match_parent"
         android:orientation="horizontal"
         android:background="#000000"
+        android:layout_margin="5dp"
         android:layout_height="wrap_content">
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Toggle Camera"
             android:layout_weight="1"
+            android:layout_marginRight="10dp"
+            android:textColor="#ffffff"
+            android:background="@drawable/custom_btn"
             android:id="@+id/toggleCam"/>
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Toggle Mode"
+            android:textColor="#ffffff"
+            android:layout_marginLeft="10dp"
+            android:background="@drawable/custom_btn"
             android:layout_weight="1"
             android:id="@+id/toggleMode"/>
     </LinearLayout>
@@ -63,7 +79,6 @@
             android:layout_gravity="center"
             android:textColor="#FFFFFF"
             android:buttonTint="#FFFFFF"
-            android:button="#000000"
             android:backgroundTint="#FFFFFF"
             android:text="Face Detection     "
             android:textSize="20sp"

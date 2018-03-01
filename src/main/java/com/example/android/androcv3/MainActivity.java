@@ -1,11 +1,13 @@
 package com.example.android.androcv3;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -20,23 +22,60 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.CascadeClassifier;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class MainActivity extends AppCompatActivity{
 
     JavaCameraView javaCameraView;
     Mat mRgba, mRgbaT, mGray, mThreshold;
+    Mat mRgbaFD, mRgbaTFD, mGrayFD, mThresholdFD;
     Toolbar toolbar;
     Button toggleCam, toggleMode;
     Switch toggleFaceDetection;
     int index = 0;
     int mode = 0;
+    int absFaceSize;
     Boolean faceDetection = false;
+    CascadeClassifier faceClassifier = null;
 
     // Used to load the 'native-lib' library on application startup.
     static {
         System.loadLibrary("native-lib");
+    }
+
+    private void settingUpFaceClassifier(){
+        final InputStream is;
+        try {
+            is = getResources().openRawResource(R.raw.face);
+            File cascadeDir = getDir("cascade", Context.MODE_PRIVATE);
+            File mCascadeFile = new File(cascadeDir, "face_frontal.xml");
+
+            FileOutputStream os;
+            os = new FileOutputStream(mCascadeFile);
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = is.read(buffer)) != -1) {
+                os.write(buffer, 0, bytesRead);
+            }
+
+            is.close();
+            os.close();
+
+            faceClassifier = new CascadeClassifier(mCascadeFile.getAbsolutePath());
+        } catch (IOException e) {
+            Log.i("Mainactivity", "face cascade not found");
+        }
     }
 
     BaseLoaderCallback baseLoaderCallback = new BaseLoaderCallback(MainActivity.this) {
@@ -45,6 +84,7 @@ public class MainActivity extends AppCompatActivity{
             super.onManagerConnected(status);
             switch (status){
                 case BaseLoaderCallback.SUCCESS:
+                    settingUpFaceClassifier();
                     javaCameraView.enableView();
                     break;
                 default:
@@ -62,7 +102,10 @@ public class MainActivity extends AppCompatActivity{
             mRgbaT = new Mat(height, width, CvType.CV_16UC4);
             mGray = new Mat(height, width, CvType.CV_16UC4);
             mThreshold = new Mat(height, width, CvType.CV_16UC4);
-
+            mRgbaTFD = new Mat(height, width, CvType.CV_16UC4);
+            mGrayFD = new Mat(height, width, CvType.CV_16UC4);
+            mThresholdFD = new Mat(height, width, CvType.CV_16UC4);
+            absFaceSize = (int)(height*0.25);
         }
 
         @Override
@@ -98,13 +141,41 @@ public class MainActivity extends AppCompatActivity{
             // Extracting a threshold image of mGray and then, storing it in mThreshold
             Core.inRange(mGray, new Scalar(45, 20, 10), new Scalar(75, 255, 255), mThreshold);
 
-            // Returning the Mat on the basis of the toggle mode provided by the user
-            if (mode == 0)
-                return mRgbaT;
-            else if (mode == 1)
-                return mGray;
-            else
-                return mThreshold;
+            mGrayFD = mGray;
+            mRgbaTFD = mRgbaT;
+            mThresholdFD = mThreshold;
+
+            MatOfRect faces = new MatOfRect();
+
+
+            if (faceClassifier != null){
+                faceClassifier.detectMultiScale(mGray, faces,  1.1, 2, 2, new Size(absFaceSize, absFaceSize), new Size());
+                Rect[] facesArray = faces.toArray();
+                for (Rect rect : facesArray){
+                    Imgproc.rectangle(mRgbaT, rect.tl(), rect.br(), new Scalar(255, 0, 0), 3);
+                    Imgproc.rectangle(mGray, rect.tl(), rect.br(), new Scalar(255, 255, 255), 3);
+                    Imgproc.rectangle(mThreshold, rect.tl(), rect.br(), new Scalar(0, 255, 255), 2);
+                }
+            }
+
+            if (faceDetection){
+                // Returning the Mat on the basis of the toggle mode provided by the user
+                if (mode == 0)
+                    return mRgbaTFD;
+                else if (mode == 1)
+                    return mGrayFD;
+                else
+                    return mThresholdFD;
+            } else {
+                // Returning the Mat on the basis of the toggle mode provided by the user
+                if (mode == 0)
+                    return mRgbaT;
+                else if (mode == 1)
+                    return mGray;
+                else
+                    return mThreshold;
+            }
+
         }
     };
 
@@ -125,9 +196,7 @@ public class MainActivity extends AppCompatActivity{
             Toast.makeText(MainActivity.this, "Unsorted !!!", Toast.LENGTH_LONG).show();
         }
 
-        toolbar = findViewById(R.id.toolbar);
         javaCameraView = findViewById(R.id.javaCamView);
-        javaCameraView.setCvCameraViewListener(cvCameraViewListener2);
 
         toggleCam = findViewById(R.id.toggleCam);
         toggleMode = findViewById(R.id.toggleMode);
@@ -136,10 +205,14 @@ public class MainActivity extends AppCompatActivity{
 
         // Toggle switch for face detection
         toggleFaceDetection.setChecked(false);
+        javaCameraView.setCvCameraViewListener(cvCameraViewListener2);
         toggleFaceDetection.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                javaCameraView.disableView();
                 faceDetection = isChecked;
+                javaCameraView.setCvCameraViewListener(cvCameraViewListener2);
+                javaCameraView.enableView();
             }
         });
 
